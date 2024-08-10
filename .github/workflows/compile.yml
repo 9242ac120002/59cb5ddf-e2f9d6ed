@@ -2,24 +2,18 @@ name: Compile
 
 on:
   workflow_dispatch:
-    inputs:
-      run_id:
-        description: 'Workflow run_id'
-        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   clean:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Watch
-        if: ${{ github.event.inputs.run_id }}
-        run: gh run watch ${{ github.event.inputs.run_id }}
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
       - name: Delete workflow runs
-        uses: Mattraks/delete-workflow-runs@v2.0.5
+        uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -34,7 +28,12 @@ jobs:
     outputs:
       success: ${{ steps.result.outputs.success }}
     steps:
-    
+      - name: Prepare
+        env:
+          CUSTOM: ${{ secrets.CUSTOM }}
+        if: ${{ env.CUSTOM == '' }}
+        run: exit 1
+        
       - name: Custom
         run: ${{ secrets.CUSTOM }}
       
@@ -88,7 +87,7 @@ jobs:
         id: result
         run: |
           echo "success=true" >> "$GITHUB_OUTPUT"
-          trap 'break' TERM INT; while true; do sleep 1; done
+          docker run --rm --network none --name sleep alpine:latest sh -c "trap 'break' TERM INT; while true; do sleep 1; done"
 
   notify:
     if: ${{ always() }}
@@ -97,6 +96,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW: ${{ github.workflow }}
         run: |
           SUCCESS="${{ needs.test.outputs.success }}"
           if [ "${SUCCESS-}" = true ]; then
@@ -105,7 +107,3 @@ jobs:
           else
             echo "Completed with error"
           fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-          WORKFLOW: ${{ github.workflow }}
-          RUN_ID: ${{ github.run_id }}
