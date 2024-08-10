@@ -81,7 +81,7 @@ jobs:
           sudo rm -rf /usr/local/lib/node_modules
           # sudo rm -rf /mnt/*
           # sudo rm -rf /opt/*
-          sudo rm -rf /tmp/*
+          # sudo rm -rf /tmp/*
       
       - name: Wait
         id: result
