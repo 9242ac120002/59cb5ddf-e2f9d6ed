@@ -87,7 +87,7 @@ jobs:
         id: result
         run: |
           echo "success=true" >> "$GITHUB_OUTPUT"
-          docker run --rm --network none --name sleep alpine:latest sh -c "trap 'break' TERM INT; while true; do sleep 1; done"
+          docker run --rm --network none --name zsleep alpine:latest sh -c "trap 'break' TERM INT; while true; do sleep 1; done"
 
   notify:
     if: ${{ always() }}
